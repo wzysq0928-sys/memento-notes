@@ -1,0 +1,9 @@
+{
+  "name": "Memento 极简备忘录",
+  "short_name": "Memento",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f7f5",
+  "theme_color": "#f7f7f5",
+  "description": "极简笔记与提醒事项"
+}
