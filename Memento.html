@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memento</title>
+<style>
+:root{--bg:#fff;--fg:#141414;--mute:#8c8c8c;--line:#e8e8e8;--card:#f5f5f5;--inv:#141414;--invfg:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#ededed;--mute:#7a7a7a;--line:#242424;--card:#141414;--inv:#ededed;--invfg:#000}}
+:root[data-theme="dark"]{--bg:#000;--fg:#ededed;--mute:#7a7a7a;--line:#242424;--card:#141414;--inv:#ededed;--invfg:#000}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+main{max-width:640px;margin:0 auto;padding:28px 20px 120px}
+header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:28px}
+h1{font-size:28px;font-weight:300;letter-spacing:-.02em;margin:0}
+nav{display:flex;gap:4px;margin-bottom:28px;border-bottom:1px solid var(--line)}
+nav button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:12px 0;color:var(--mute);font:inherit;font-size:15px;cursor:pointer;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--fg)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:20px}
+.field{flex:1;display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:0 14px}
+.field svg{flex:none;color:var(--mute)}
+input,textarea{font:inherit;color:var(--fg);background:none;border:0;width:100%;padding:12px 0}
+input::placeholder,textarea::placeholder{color:var(--mute)}
+.ic{width:44px;height:44px;border-radius:50%;border:0;background:var(--inv);color:var(--invfg);display:grid;place-items:center;cursor:pointer;flex:none}
+.ghost{background:none;border:0;color:var(--mute);cursor:pointer;padding:8px;border-radius:8px;display:grid;place-items:center}
+.ghost:hover{color:var(--fg)}
+.note{display:block;width:100%;text-align:left;background:var(--card);border:0;border-radius:14px;padding:16px 18px;margin-bottom:10px;color:var(--fg);font:inherit;cursor:pointer}
+.note b{display:block;font-weight:500;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note p{margin:0;color:var(--mute);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.note small,.meta{color:var(--mute);font-size:12px}
+.row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.row .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.row.done .t span{text-decoration:line-through;color:var(--mute)}
+.chk{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--mute);background:none;color:var(--invfg);display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
+.chk.on{background:var(--inv);border-color:var(--inv)}
+.late{color:var(--fg);font-weight:500}
+.add{background:var(--card);border-radius:14px;padding:6px 16px 12px;margin-bottom:12px}
+.add input[type=datetime-local]{color:var(--mute);font-size:14px;padding:6px 0;color-scheme:light dark}
+.add .go{margin-top:6px;border:0;background:var(--inv);color:var(--invfg);font:inherit;font-size:15px;border-radius:999px;padding:10px 22px;cursor:pointer}
+h2{font-size:13px;font-weight:400;color:var(--mute);margin:28px 0 4px}
+.empty{color:var(--mute);text-align:center;padding:56px 0;font-size:15px}
+dialog{border:0;padding:0;background:var(--bg);color:var(--fg);width:100%;max-width:640px;height:100%;max-height:100%;margin:0 auto}
+dialog::backdrop{background:var(--bg)}
+.ed{display:flex;flex-direction:column;height:100%;padding:calc(12px + env(safe-area-inset-top,0px)) 20px calc(12px + env(safe-area-inset-bottom,0px))}
+.ed .top{display:flex;justify-content:space-between;align-items:center}
+.ed input{font-size:24px;font-weight:300;letter-spacing:-.01em;border-bottom:1px solid var(--line);margin-top:12px}
+.ed textarea{flex:1;resize:none;padding-top:16px;line-height:1.6}
+#toast{position:fixed;left:50%;transform:translate(-50%,-80px);top:calc(14px + env(safe-area-inset-top,0px));background:var(--inv);color:var(--invfg);padding:12px 20px;border-radius:999px;font-size:14px;transition:transform .25s;z-index:30;max-width:90%;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Memento</h1><span class="meta" id="today"></span></header>
+<nav role="tablist">
+<button role="tab" data-tab="notes" aria-selected="true">Memos</button>
+<button role="tab" data-tab="tasks" aria-selected="false">Reminders</button>
+<button role="tab" data-tab="done" aria-selected="false">Done</button>
+</nav>
+<section id="notes">
+<div class="bar">
+<label class="field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Search memos" aria-label="Search memos"></label>
+<button class="ic" id="newNote" aria-label="New memo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+<div id="noteList"></div>
+</section>
+<section id="tasks" hidden>
+<div class="add">
+<input id="tText" placeholder="What needs doing?" aria-label="Task">
+<input id="tWhen" type="datetime-local" aria-label="Date and time">
+<button class="go" id="addTask">Add reminder</button>
+</div>
+<div id="taskList"></div>
+</section>
+<section id="done" hidden><div id="doneList"></div></section>
+</main>
+
+<dialog id="dlg"><div class="ed">
+<div class="top">
+<button class="ghost" id="back" aria-label="Save and close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+<button class="ghost" id="del" aria-label="Delete memo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+</div>
+<input id="eTitle" placeholder="Title" aria-label="Title">
+<textarea id="eBody" placeholder="Start writing" aria-label="Memo text"></textarea>
+</div></dialog>
+<div id="toast" role="status"></div>
+
+<script>
+const KEY='memento:v1';
+let S={notes:[],tasks:[]},cur=null;
+try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.notes=d.notes||[];S.tasks=d.tasks||[]}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fmt=(t,o)=>new Date(t).toLocaleString(undefined,o||{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const CHECK='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
+const X='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function empty(box,msg){box.append(el('div','empty',msg))}
+$('today').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+
+/* tabs */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['notes','tasks','done'].forEach(id=>$(id).hidden=id!==b.dataset.tab);
+  render();
+});
+
+/* memos */
+function renderNotes(){
+  const box=$('noteList'),q=$('q').value.trim().toLowerCase();box.replaceChildren();
+  const list=S.notes.filter(n=>!q||(n.title+' '+n.body).toLowerCase().includes(q)).sort((a,b)=>b.updated-a.updated);
+  if(!list.length)return empty(box,q?'No memos match your search.':'No memos yet. Tap + to write one.');
+  list.forEach(n=>{
+    const b=el('button','note');b.append(el('b',null,n.title||'Untitled'),el('p',null,n.body||'No text'),el('small',null,fmt(n.updated)));
+    b.onclick=()=>openNote(n.id);box.append(b);
+  });
+}
+function openNote(id){
+  cur=id?S.notes.find(n=>n.id===id):null;
+  $('eTitle').value=cur?cur.title:'';$('eBody').value=cur?cur.body:'';
+  $('del').style.visibility=cur?'visible':'hidden';
+  $('dlg').showModal();if(!cur)$('eTitle').focus();
+}
+function closeNote(){
+  const t=$('eTitle').value.trim(),b=$('eBody').value;
+  if(cur){if(cur.title!==t||cur.body!==b){cur.title=t;cur.body=b;cur.updated=Date.now()}}
+  else if(t||b.trim())S.notes.push({id:uid(),title:t,body:b,updated:Date.now()});
+  save();$('dlg').close();cur=null;render();
+}
+$('newNote').onclick=()=>openNote();
+$('back').onclick=closeNote;
+$('dlg').addEventListener('cancel',e=>{e.preventDefault();closeNote()});
+$('del').onclick=()=>{if(cur&&confirm('Delete this memo?')){S.notes=S.notes.filter(n=>n!==cur);save();$('dlg').close();cur=null;render()}};
+$('q').oninput=renderNotes;
+
+/* reminders */
+function taskRow(t,withDel){
+  const r=el('div','row'+(t.done?' done':'')),c=el('button','chk'+(t.done?' on':''));
+  c.innerHTML=t.done?CHECK:'';c.setAttribute('aria-label',t.done?'Mark as not done':'Mark as done');
+  c.onclick=()=>{t.done=!t.done;t.doneAt=t.done?Date.now():null;save();render()};
+  const x=el('div','t'),s=el('span',null,t.text);x.append(s);
+  if(t.due){const late=!t.done&&t.due<Date.now();x.append(el('div','meta'+(late?' late':''),(late?'Overdue · ':'')+fmt(t.due)))}
+  r.append(c,x);
+  if(withDel){const d=el('button','ghost');d.innerHTML=X;d.setAttribute('aria-label','Delete reminder');d.onclick=()=>{S.tasks=S.tasks.filter(k=>k!==t);save();render()};r.append(d)}
+  return r;
+}
+function renderTasks(){
+  const box=$('taskList');box.replaceChildren();
+  const list=S.tasks.filter(t=>!t.done).sort((a,b)=>(a.due||Infinity)-(b.due||Infinity));
+  if(!list.length)return empty(box,'Nothing pending. Add a reminder above.');
+  list.forEach(t=>box.append(taskRow(t,true)));
+}
+$('addTask').onclick=()=>{
+  const text=$('tText').value.trim();if(!text){$('tText').focus();return}
+  const w=$('tWhen').value;
+  S.tasks.push({id:uid(),text,due:w?new Date(w).getTime():null,done:false,doneAt:null,alerted:false});
+  $('tText').value='';$('tWhen').value='';save();render();
+};
+$('tText').onkeydown=e=>{if(e.key==='Enter')$('addTask').click()};
+
+/* daily list */
+function renderDone(){
+  const box=$('doneList');box.replaceChildren();
+  const list=S.tasks.filter(t=>t.done).sort((a,b)=>b.doneAt-a.doneAt);
+  if(!list.length)return empty(box,'Completed tasks will appear here, grouped by day.');
+  const groups={};list.forEach(t=>(groups[dayKey(t.doneAt)]??=[]).push(t));
+  Object.keys(groups).sort().reverse().forEach(k=>{
+    const first=groups[k][0].doneAt,isToday=k===dayKey(Date.now());
+    box.append(el('h2',null,(isToday?'Today · ':'')+fmt(first,{weekday:'long',month:'long',day:'numeric'})+' · '+groups[k].length+' done'));
+    groups[k].forEach(t=>box.append(taskRow(t,false)));
+  });
+}
+
+function render(){renderNotes();renderTasks();renderDone()}
+
+/* due alerts */
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),5000)}
+function check(){
+  const now=Date.now();let hit=false;
+  S.tasks.forEach(t=>{if(!t.done&&t.due&&t.due<=now&&!t.alerted){t.alerted=true;hit=true;toast('Due now: '+t.text)}});
+  if(hit){save();render()}
+}
+setInterval(check,20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
+render();check();
+</script>
+</body>
+</html>
